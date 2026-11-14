@@ -199,11 +199,6 @@ export class PosterModal extends Modal {
           alt: "海报预览",
         },
       });
-      img.style.maxWidth = "100%";
-      img.style.maxHeight = "460px";
-      img.style.borderRadius = "10px";
-      img.style.display = "block";
-      img.style.margin = "8px auto";
     }
   }
 

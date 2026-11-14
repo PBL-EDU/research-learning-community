@@ -80,13 +80,13 @@ export class RlcSettingTab extends PluginSettingTab {
   override display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "研究性学习社区" });
+    new Setting(containerEl).setName("研究性学习社区").setHeading();
     containerEl.createEl("p", {
       text: "学生的半成品与失败稿不该经过学校服务器：AI 调用全部在你本机完成，只有你点「发布」的卡片才会上传。",
       cls: "setting-item-description",
     });
 
-    containerEl.createEl("h3", { text: "作者身份" });
+    new Setting(containerEl).setName("作者身份").setHeading();
     new Setting(containerEl)
       .setName("展示名")
       .setDesc("班内可见的名字。公开页一律使用下面的 handle。")
@@ -113,7 +113,7 @@ export class RlcSettingTab extends PluginSettingTab {
           }),
       );
 
-    containerEl.createEl("h3", { text: "学生身份" });
+    new Setting(containerEl).setName("学生身份").setHeading();
 
     const boundHandle = this.rlc.settings.bindHandle;
     containerEl.createEl("p", {
@@ -189,7 +189,7 @@ export class RlcSettingTab extends PluginSettingTab {
           }),
       );
 
-    containerEl.createEl("h3", { text: "AI（自带 Key）" });
+    new Setting(containerEl).setName("AI（自带 Key）").setHeading();
     containerEl.createEl("p", {
       text: "支持任何 OpenAI 兼容端点。密钥以明文保存在本插件的 data.json 里，只在本机使用。",
       cls: "setting-item-description",
@@ -269,7 +269,7 @@ export class RlcSettingTab extends PluginSettingTab {
         }),
       );
 
-    containerEl.createEl("h3", { text: "我的读者（科普版画像）" });
+    new Setting(containerEl).setName("我的读者（科普版画像）").setHeading();
     containerEl.createEl("p", {
       text: "写科普版前先定义读者：名称 + 自由描述。AI 会按这些描述决定长度、语气和用词。可以有多条。",
       cls: "setting-item-description",
@@ -331,7 +331,7 @@ export class RlcSettingTab extends PluginSettingTab {
         }),
       );
 
-    containerEl.createEl("h3", { text: "海报配图（seedream）" });
+    new Setting(containerEl).setName("海报配图（seedream）").setHeading();
     containerEl.createEl("p", {
       text: "生成海报时用它画插画，再在本地排版成 1080×1440 的成品图。留空则海报按钮只做排版、不画图。",
       cls: "setting-item-description",
@@ -368,7 +368,7 @@ export class RlcSettingTab extends PluginSettingTab {
         }),
       );
 
-    containerEl.createEl("h3", { text: "文献整理（PDF → Markdown）" });
+    new Setting(containerEl).setName("文献整理（PDF → Markdown）").setHeading();
     containerEl.createEl("p", {
       text: "把文献文件夹里的「原文.pdf」上传到 AI 服务商做 OCR，还原成 Markdown，英文文献逐段附中文译文。首次使用会让你确认一次。",
       cls: "setting-item-description",
@@ -394,7 +394,7 @@ export class RlcSettingTab extends PluginSettingTab {
         }),
       );
 
-    containerEl.createEl("h3", { text: "服务端（可选）" });
+    new Setting(containerEl).setName("服务端（可选）").setHeading();
     containerEl.createEl("p", {
       text: "留空时，发布只会写入本地 outbox，不会上传任何内容。",
       cls: "setting-item-description",

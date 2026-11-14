@@ -1,7 +1,6 @@
 import esbuild from "esbuild";
 import process from "process";
-import builtins from "builtin-modules";
-import path from "node:path";
+import { builtinModules } from "node:module";
 
 const banner = "/* 研究性学习社区 · Obsidian 插件（esbuild 打包） */";
 const prod = process.argv[2] === "production";
@@ -10,10 +9,6 @@ const context = await esbuild.context({
   banner: { js: banner },
   entryPoints: ["src/main.ts"],
   bundle: true,
-  alias: {
-    "@rlc/contract": path.resolve("packages/contract/src/index.ts"),
-    "@rlc/vault-core": path.resolve("packages/vault-core/src/index.ts"),
-  },
   external: [
     "obsidian",
     "electron",
@@ -28,7 +23,7 @@ const context = await esbuild.context({
     "@lezer/common",
     "@lezer/highlight",
     "@lezer/lr",
-    ...builtins,
+    ...builtinModules,
   ],
   format: "cjs",
   target: "es2018",

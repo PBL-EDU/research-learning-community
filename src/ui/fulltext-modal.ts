@@ -31,7 +31,7 @@ export class FulltextHelpModal extends Modal {
         href: url,
         attr: { target: "_blank", rel: "noopener noreferrer" },
       });
-      link.style.fontWeight = "600";
+      link.addClass("rlc-link-strong");
       if (note) main.createEl("div", { text: note, cls: "rlc-cand-status" });
     };
 

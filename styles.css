@@ -568,3 +568,16 @@
   padding: 2px 6px;
 }
 
+
+/* 评审要求：内联样式改为类 */
+.rlc-link-strong {
+  font-weight: 600;
+}
+
+.rlc-poster-preview {
+  max-width: 100%;
+  max-height: 460px;
+  border-radius: 10px;
+  display: block;
+  margin: 8px auto;
+}
