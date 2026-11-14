@@ -1,0 +1,570 @@
+/* ==========================================================================
+   研究性学习社区 · 视觉主题 B「卡片工作台」
+   两端共用同一套设计语言：圆角卡片、轻阴影、靛蓝强调色、标签胶囊。
+   插件内用 Obsidian 变量做底色适配（明/暗主题自动跟随）。
+   ========================================================================== */
+
+.rlc-overview {
+  --rlc-accent: var(--interactive-accent, #4f46e5);
+  --rlc-accent-ink: #ffffff;
+  --rlc-accent-weak: var(--background-modifier-hover, rgba(79, 70, 229, 0.08));
+  --rlc-surface: var(--background-primary);
+  --rlc-surface-2: var(--background-secondary);
+  --rlc-ink: var(--text-normal);
+  --rlc-muted: var(--text-muted);
+  --rlc-line: var(--background-modifier-border);
+  --rlc-radius: 12px;
+  --rlc-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 6px 20px rgba(15, 23, 42, 0.05);
+  /* 折叠线：比主边框更浅，用来表示「属于」而不是「分隔」。 */
+  --rlc-line-soft: color-mix(in srgb, var(--rlc-line) 55%, transparent);
+
+  padding: 4px 2px 24px;
+  color: var(--rlc-ink);
+}
+
+/* ---------- 顶部 ---------- */
+.rlc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.rlc-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.rlc-title-sub {
+  font-size: 11px;
+  color: var(--rlc-muted);
+}
+
+.rlc-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rlc-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--rlc-accent-weak);
+  color: var(--rlc-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--rlc-line);
+}
+
+.rlc-identity {
+  font-size: 11px;
+  color: var(--rlc-muted);
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- 按钮 ---------- */
+.rlc-btn {
+  font: inherit;
+  font-size: 11.5px;
+  line-height: 1.4;
+  padding: 3px 9px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--rlc-line);
+  border-radius: 8px;
+  color: var(--rlc-ink);
+  white-space: nowrap;
+}
+
+.rlc-btn:hover {
+  background: var(--rlc-accent-weak);
+}
+
+.rlc-btn-primary {
+  background: var(--rlc-accent);
+  border-color: var(--rlc-accent);
+  color: var(--rlc-accent-ink);
+}
+
+.rlc-btn-primary:hover {
+  filter: brightness(1.05);
+  background: var(--rlc-accent);
+}
+
+.rlc-btn-ghost {
+  background: transparent;
+}
+
+.rlc-btn-small {
+  font-size: 10.5px;
+  padding: 1px 7px;
+  border-radius: 7px;
+}
+
+/* ---------- 统计 ---------- */
+.rlc-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.rlc-stat {
+  background: var(--rlc-surface-2);
+  border: 1px solid var(--rlc-line);
+  border-radius: 10px;
+  padding: 8px 4px;
+  text-align: center;
+}
+
+.rlc-stat-value {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.rlc-stat-label {
+  font-size: 10px;
+  color: var(--rlc-muted);
+  margin-top: 2px;
+}
+
+/* ---------- 待发布 ---------- */
+.rlc-pending {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  margin-bottom: 12px;
+  border-left: 3px solid var(--rlc-accent);
+  background: var(--rlc-accent-weak);
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+/* ---------- 领域卡 ---------- */
+.rlc-domain-card {
+  background: var(--rlc-surface-2);
+  border: 1px solid var(--rlc-line);
+  border-radius: var(--rlc-radius);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.rlc-domain-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rlc-domain-info {
+  min-width: 0;
+}
+
+.rlc-domain-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.rlc-domain-meta {
+  font-size: 11px;
+  color: var(--rlc-muted);
+  margin-top: 2px;
+}
+
+.rlc-domain-actions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.rlc-domain-empty {
+  font-size: 11.5px;
+  color: var(--rlc-muted);
+  margin-top: 10px;
+  line-height: 1.6;
+}
+
+/* ---------- 文献卡 ---------- */
+/* 文献行：不再用卡片盒子，靠竖线 + 缩进表达层级。
+   悬停只给一层很淡的底色反馈，避免又长出圆角框。 */
+.rlc-lit-card {
+  position: relative;
+  padding: 8px 8px 10px;
+  margin-top: 4px;
+  border-radius: 8px;
+}
+
+.rlc-lit-card:hover {
+  background: var(--rlc-accent-weak);
+}
+
+.rlc-lit-card::before {
+  content: "";
+  position: absolute;
+  left: -17px;
+  top: 12px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--rlc-surface);
+  border: 1px solid var(--rlc-line);
+}
+
+.rlc-lit-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rlc-lit-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.rlc-lit-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.rlc-lit-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rlc-lit-title:hover {
+  color: var(--rlc-accent);
+  text-decoration: underline;
+}
+
+.rlc-lit-meta {
+  font-size: 11px;
+  color: var(--rlc-muted);
+  margin-top: 2px;
+}
+
+.rlc-lit-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.rlc-lit-actions .rlc-btn {
+  font-size: 10px;
+  padding: 3px 2px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 7px;
+}
+
+.rlc-lit-actions .rlc-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ---------- 状态标签 ---------- */
+.rlc-status-chip {
+  flex: none;
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--rlc-surface-2);
+  color: var(--rlc-muted);
+  border: 1px solid transparent;
+}
+
+.rlc-status-deep_read,
+.rlc-published {
+  background: rgba(34, 197, 94, 0.14);
+  color: #16a34a;
+}
+
+.rlc-published {
+  cursor: pointer;
+}
+
+.rlc-status-skipped {
+  opacity: 0.6;
+}
+
+/* ---------- 卡片行 ---------- */
+/* 卡片层：缩进到文献标题之后，并用更浅的线表示第三层。 */
+.rlc-card-list {
+  margin-top: 6px;
+  margin-left: 10px;
+  padding-left: 14px;
+  border-left: 1px solid var(--rlc-line-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.rlc-card-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+
+.rlc-card-row::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  width: 9px;
+  height: 1px;
+  background: var(--rlc-line-soft);
+}
+
+.rlc-card-row:hover {
+  background: var(--rlc-accent-weak);
+}
+
+.rlc-card-title {
+  flex: 1;
+  font-size: 12px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rlc-card-title:hover {
+  color: var(--rlc-accent);
+  text-decoration: underline;
+}
+
+.rlc-card-date {
+  font-size: 10px;
+  color: var(--rlc-muted);
+}
+
+.rlc-more {
+  font-size: 11px;
+  color: var(--rlc-muted);
+  padding: 2px 6px;
+}
+
+/* ---------- 空态 ---------- */
+.rlc-empty {
+  text-align: center;
+  padding: 44px 16px;
+  border: 1px dashed var(--rlc-line);
+  border-radius: var(--rlc-radius);
+}
+
+.rlc-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.rlc-empty-text {
+  font-size: 12px;
+  color: var(--rlc-muted);
+  margin-bottom: 14px;
+}
+
+/* ---------- 弹窗 ---------- */
+.rlc-modal {
+  min-width: 560px;
+}
+
+.rlc-modal .rlc-hint {
+  color: var(--text-muted);
+  font-size: 0.9em;
+  margin-bottom: 1em;
+  line-height: 1.5;
+}
+
+.rlc-modal .rlc-actions {
+  border-top: none;
+  padding-top: 1em;
+}
+
+.rlc-context {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 4px 0 10px;
+}
+
+.rlc-chip {
+  font-size: 11px;
+  background: var(--background-secondary);
+  padding: 1px 8px;
+  border-radius: 999px;
+  color: var(--text-muted);
+}
+
+.rlc-mermaid-preview {
+  background: var(--background-secondary);
+  border-radius: 8px;
+  padding: 0.75em;
+  font-size: 0.8em;
+  max-height: 200px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.rlc-skim-input {
+  width: 420px;
+  font-family: var(--font-text);
+  line-height: 1.6;
+}
+
+/* ---------- 候选文献 ---------- */
+.rlc-cands {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 52vh;
+  overflow: auto;
+  margin: 8px 0 12px;
+}
+
+.rlc-cand {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  background: var(--background-primary);
+}
+
+.rlc-cand input[type="checkbox"] {
+  margin-top: 3px;
+  flex: none;
+}
+
+.rlc-cand-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.rlc-cand-title {
+  font-size: 0.9em;
+  font-weight: 600;
+}
+
+.rlc-cand-doi {
+  font-family: var(--font-monospace);
+  font-size: 0.72em;
+}
+
+.rlc-cand-status {
+  font-size: 0.75em;
+  margin-top: 2px;
+}
+
+.rlc-verdict-verified {
+  color: #16a34a;
+}
+
+.rlc-verdict-title-mismatch,
+.rlc-verdict-not-found {
+  color: var(--text-error);
+}
+
+.rlc-verdict-no-doi,
+.rlc-verdict-unchecked,
+.rlc-verdict-checking {
+  color: var(--text-muted);
+}
+
+.rlc-risky-toggle {
+  border-top: none;
+}
+
+/* ---------- 状态栏 ---------- */
+.rlc-status {
+  cursor: pointer;
+}
+
+@media (max-width: 420px) {
+  .rlc-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ---------- 折叠 ---------- */
+.rlc-caret {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  line-height: 1;
+  margin: 3px 2px 0 0;
+  color: var(--rlc-muted);
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.rlc-caret:hover {
+  color: var(--rlc-accent);
+  background: transparent;
+}
+
+.rlc-hidden {
+  display: none;
+}
+
+.rlc-domain-body {
+  margin-top: 8px;
+  margin-left: 7px;
+  padding-left: 14px;
+  border-left: 1px solid var(--rlc-line);
+}
+
+/* 折叠的领域：底部改用虚线收口，提示「下面还有内容」。 */
+.rlc-domain-collapsed .rlc-domain-head {
+  border-bottom: 1px dashed var(--rlc-line);
+  padding-bottom: 8px;
+}
+
+.rlc-lit-body {
+  margin-top: 2px;
+}
+
+.rlc-pending-chip {
+  background: rgba(245, 158, 11, 0.16);
+  color: #b45309;
+}
+
+.rlc-header-right .rlc-btn-small {
+  font-size: 10px;
+  padding: 2px 6px;
+}
+

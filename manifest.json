@@ -1,0 +1,9 @@
+{
+  "id": "research-learning-community",
+  "name": "Research-based Learning Community",
+  "version": "0.17.1",
+  "minAppVersion": "1.5.0",
+  "description": "领域 → AI 综述 → 核验文献 → 略读 → 精读卡片：一条可追溯的研究阅读链路（Research-based Learning Community）。",
+  "author": "denghao",
+  "isDesktopOnly": false
+}
