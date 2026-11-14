@@ -72,3 +72,20 @@ Early but usable. The optional server component is not required for local use.
 ## License
 
 MIT
+
+## Build from source
+
+```bash
+pnpm install
+pnpm build      # typecheck + bundle to main.js
+```
+
+Layout:
+
+```
+src/                 plugin source
+packages/contract/   card & API schemas
+packages/vault-core/ vault layout and rendering
+```
+
+`main.js` in the repository root is the built bundle, so the plugin can also be installed without building.

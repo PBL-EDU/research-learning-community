@@ -1,0 +1,23 @@
+{
+  "name": "research-learning-community",
+  "version": "0.17.2",
+  "private": true,
+  "description": "Research-based Learning Community · Obsidian plugin",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -p tsconfig.json --noEmit && node esbuild.config.mjs production",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@rlc/contract": "workspace:*",
+    "@rlc/vault-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "builtin-modules": "^5.5.0",
+    "esbuild": "^0.28.2",
+    "obsidian": "^1.14.4",
+    "typescript": "^7.0.2"
+  }
+}

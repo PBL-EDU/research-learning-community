@@ -1,0 +1,11 @@
+{
+  "name": "@rlc/contract",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Card schemas, API DTOs, error codes and templates.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "zod": "^4.6.7"
+  }
+}

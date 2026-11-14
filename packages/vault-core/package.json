@@ -1,0 +1,12 @@
+{
+  "name": "@rlc/vault-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vault layout, frontmatter I/O and card rendering (no Obsidian dependency).",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@rlc/contract": "workspace:*",
+    "yaml": "^2.9.1"
+  }
+}

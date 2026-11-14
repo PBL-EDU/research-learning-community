@@ -1,0 +1,25 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": [
+      "node"
+    ],
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "paths": {
+      "@rlc/contract": [
+        "./packages/contract/src/index.ts"
+      ],
+      "@rlc/vault-core": [
+        "./packages/vault-core/src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "src",
+    "packages"
+  ]
+}
