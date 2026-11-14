@@ -1,6 +1,6 @@
 {
   "name": "research-learning-community",
-  "version": "0.17.3",
+  "version": "0.17.4",
   "private": true,
   "description": "Research-based Learning Community · Obsidian plugin",
   "main": "main.js",

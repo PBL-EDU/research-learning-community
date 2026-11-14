@@ -1,7 +1,7 @@
 {
   "id": "research-learning-community",
   "name": "Research-based Learning Community",
-  "version": "0.17.3",
+  "version": "0.17.4",
   "minAppVersion": "1.5.0",
   "description": "Turn papers into deep-read cards with AI literature reviews, verified sources, and reader-adapted posters.",
   "author": "denghao",
