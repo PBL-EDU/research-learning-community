@@ -109,51 +109,6 @@ export function parseDraftResult(value: unknown): DraftResult {
   };
 }
 
-export function mermaidMessages(input: {
-  title: string;
-  quote: string;
-  insight: string;
-  meaning: string;
-}): ChatMessage[] {
-  const user = [
-    "把下面这张精读卡片的认知转变画成一张 Mermaid 图。",
-    `卡片标题：${input.title}`,
-    `原文：${input.quote}`,
-    `Aha：${input.insight}`,
-    `对生活的意义：${input.meaning}`,
-    "",
-    "要求：",
-    "1. 用 flowchart TD；节点控制在 5–9 个；",
-    "2. 结构体现「原来的默认假设 → 触发 → 新的理解 → 行动」，有张力；",
-    "3. 节点文字简短（中文，≤18 字），不要放长句；",
-    "4. 不要用括号、引号、冒号等会破坏 Mermaid 语法的字符；",
-    "5. 只输出 Mermaid 代码，不要 ``` 围栏，不要解释。",
-  ].join("\n");
-
-  return [
-    { role: "system", content: "你是严谨的信息图设计师，只输出合法 Mermaid 代码。" },
-    { role: "user", content: user },
-  ];
-}
-
-const MERMAID_STARTS = ["flowchart", "graph", "sequencediagram", "statediagram", "mindmap", "timeline"];
-
-/** 服务端与插件都要能挡住坏图，否则门户渲染会整块白屏。 */
-export function validateMermaid(code: string): string {
-  const cleaned = code
-    .replace(/^```(?:mermaid)?\s*/i, "")
-    .replace(/```\s*$/i, "")
-    .trim();
-  const first = cleaned.split(/\r?\n/)[0]?.trim().toLowerCase() ?? "";
-  if (!MERMAID_STARTS.some((start) => first.startsWith(start))) {
-    throw new Error(`不是合法的 Mermaid：第一行应以 ${MERMAID_STARTS.join(" / ")} 开头`);
-  }
-  if (cleaned.length > 4000) {
-    throw new Error("Mermaid 代码过长（>4000 字符），请让图更简单");
-  }
-  return cleaned;
-}
-
 export function skimReportMessages(input: {
   paper: PaperBrief;
   abstract?: string;

@@ -2,11 +2,24 @@
   "name": "@rlc/vault-core",
   "version": "0.1.0",
   "private": true,
-  "description": "Vault layout, frontmatter I/O and card rendering (no Obsidian dependency).",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "description": "研究性学习社区 Vault 核心：目录布局、frontmatter 读写、卡片文件渲染（禁止依赖 obsidian）",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
   "dependencies": {
     "@rlc/contract": "workspace:*",
     "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
   }
 }

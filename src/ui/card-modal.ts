@@ -3,12 +3,7 @@ import { parseCard } from "@rlc/contract";
 import { assetsDir, cardFilePath, literatureNotePath, shortId } from "@rlc/vault-core";
 import type RlcPlugin from "../main";
 import { newUuid } from "../core/id";
-import {
-  deepReadDraftMessages,
-  mermaidMessages,
-  parseDraftResult,
-  validateMermaid,
-} from "../core/prompts";
+import { deepReadDraftMessages, parseDraftResult } from "../core/prompts";
 
 /** 卡片的归属上下文：领域 + 文献。新建卡片必须从一篇文献进来。 */
 export interface CardContext {
@@ -43,7 +38,6 @@ interface DraftState {
 
 export class DeepReadCardModal extends Modal {
   private readonly cardId = newUuid();
-  private mermaidCode: string | null = null;
   private busy = false;
 
   private readonly state: DraftState = {
@@ -66,12 +60,19 @@ export class DeepReadCardModal extends Modal {
     private readonly rlc: RlcPlugin,
     private readonly context: CardContext,
     private readonly onSaved?: () => void,
+    private readonly initialQuote?: string,
   ) {
     super(app);
   }
 
   override onOpen(): void {
     this.modalEl.addClass("rlc-modal");
+    // 优先用调用方显式传入的选区（编辑器右键），其次读当前活动编辑器。
+    const explicit = this.initialQuote?.trim();
+    const selection = explicit || this.app.workspace.activeEditor?.editor?.getSelection()?.trim();
+    if (selection && selection.length <= 300 && this.state.quote.trim().length === 0) {
+      this.state.quote = selection;
+    }
     this.render();
   }
 
@@ -101,23 +102,23 @@ export class DeepReadCardModal extends Modal {
     contentEl.createEl("h4", { text: "Aha 五点" });
     this.areaRow("原文摘录", "只粘贴原文，不改写；上限 300 字（版权红线）", this.state.quote, (value) => {
       this.state.quote = value;
-    }, 3);
+    }, 2);
     this.areaRow("我的体验", "一个具体的生活/学习场景，不要泛泛而谈", this.state.experience, (value) => {
       this.state.experience = value;
-    }, 3);
+    }, 2);
     this.areaRow("Aha", "它推翻了什么默认假设？「原来我以为…，现在发现…」", this.state.insight, (value) => {
       this.state.insight = value;
-    }, 3);
+    }, 2);
     this.areaRow("新启发", "由此产生的新想法或新问题", this.state.inspiration, (value) => {
       this.state.inspiration = value;
-    }, 3);
+    }, 2);
     this.areaRow("对生活的意义", "改变了什么观念，或让你能做什么", this.state.meaning, (value) => {
       this.state.meaning = value;
-    }, 3);
+    }, 2);
 
-    contentEl.createEl("h4", { text: "观念价值与行动" });
     new Setting(contentEl)
-      .setName("观念价值等级")
+      .setName("这个 Aha 的分量")
+      .setDesc("决定它值不值得进一步做成实践、科普或海报")
       .addDropdown((dropdown) =>
         dropdown
           .addOptions({ 高: "高", 中: "中", 低: "低" })
@@ -126,18 +127,6 @@ export class DeepReadCardModal extends Modal {
             this.state.level = value as Level;
           }),
       );
-    this.textRow("观念价值说明", "一句话：它改变了哪个认知", this.state.conceptNote, (value) => {
-      this.state.conceptNote = value;
-    });
-    this.textRow("行动", "下周就能做的一件具体事", this.state.action, (value) => {
-      this.state.action = value;
-    });
-    this.textRow("触发时机", "什么时候做", this.state.trigger, (value) => {
-      this.state.trigger = value;
-    });
-    this.textRow("衡量标准", "怎么算做到了", this.state.metric, (value) => {
-      this.state.metric = value;
-    });
 
     contentEl.createEl("h4", { text: "AI 辅助" });
     this.areaRow("零散笔记（可选）", "想到什么写什么，AI 会据此起草上面五段", this.state.notes, (value) => {
@@ -150,11 +139,20 @@ export class DeepReadCardModal extends Modal {
           await this.draftWithAi(button.buttonEl);
         }),
       )
-      .addButton((button) =>
-        button.setButtonText("生成 Mermaid 视觉图").onClick(async () => {
-          await this.generateVisual(button.buttonEl);
-        }),
-      )
+      .settingEl.addClass("rlc-actions");
+
+    contentEl.createEl("h4", { text: "行动指导" });
+    this.textRow("行动", "下周就能做的一件具体事", this.state.action, (value) => {
+      this.state.action = value;
+    });
+    this.textRow("触发时机", "什么时候做", this.state.trigger, (value) => {
+      this.state.trigger = value;
+    });
+    this.textRow("衡量标准", "怎么算做到了", this.state.metric, (value) => {
+      this.state.metric = value;
+    });
+
+    new Setting(contentEl)
       .addButton((button) =>
         button.setButtonText("保存卡片").setCta().onClick(async () => {
           await this.save(button.buttonEl);
@@ -162,9 +160,6 @@ export class DeepReadCardModal extends Modal {
       )
       .settingEl.addClass("rlc-actions");
 
-    if (this.mermaidCode) {
-      contentEl.createEl("pre", { text: this.mermaidCode, cls: "rlc-mermaid-preview" });
-    }
   }
 
   private textRow(
@@ -175,6 +170,7 @@ export class DeepReadCardModal extends Modal {
   ): void {
     const setting = new Setting(this.contentEl).setName(name);
     if (desc.length > 0) setting.setDesc(desc);
+    setting.settingEl.addClass("rlc-field-stacked");
     setting.addText((text) =>
       text.setPlaceholder(desc).setValue(initial).onChange((value) => setter(value)),
     );
@@ -189,6 +185,7 @@ export class DeepReadCardModal extends Modal {
   ): void {
     const setting = new Setting(this.contentEl).setName(name);
     if (desc.length > 0) setting.setDesc(desc);
+    setting.settingEl.addClass("rlc-field-stacked");
     setting.addTextArea((area) => {
       area.inputEl.rows = rows;
       area.setPlaceholder(desc).setValue(initial).onChange((value) => setter(value));
@@ -243,36 +240,6 @@ export class DeepReadCardModal extends Modal {
     }
   }
 
-  private async generateVisual(buttonEl: HTMLButtonElement): Promise<void> {
-    if (this.busy) return;
-    if (this.state.insight.trim().length === 0) {
-      new Notice("先写出 Aha，再让 AI 画图——没有观点的图只是装饰。");
-      return;
-    }
-
-    this.busy = true;
-    buttonEl.disabled = true;
-    buttonEl.setText("生成中…");
-    try {
-      const code = await this.rlc.ai.chat(
-        mermaidMessages({
-          title: this.state.title.trim() || this.context.literatureTitle,
-          quote: this.state.quote.trim(),
-          insight: this.state.insight.trim(),
-          meaning: this.state.meaning.trim(),
-        }),
-      );
-      this.mermaidCode = validateMermaid(code);
-      this.render();
-      new Notice("视觉图已生成，保存卡片时会写入 assets/");
-    } catch (error) {
-      new Notice(`生成视觉图失败：${(error as Error).message}`);
-    } finally {
-      this.busy = false;
-      buttonEl.disabled = false;
-    }
-  }
-
   private async save(buttonEl: HTMLButtonElement): Promise<void> {
     if (this.busy) return;
 
@@ -282,10 +249,6 @@ export class DeepReadCardModal extends Modal {
 
     try {
       const now = new Date().toISOString();
-      const visualPath = this.mermaidCode
-        ? `${assetsDir(this.context.domain, this.context.citekey)}/dr-${shortId(this.cardId)}-aha.mmd`
-        : null;
-
       const candidate = {
         schema: "dr-card@1",
         cardId: this.cardId,
@@ -312,7 +275,8 @@ export class DeepReadCardModal extends Modal {
         },
         conceptValue: {
           level: this.state.level,
-          note: this.state.conceptNote.trim(),
+          // 合并后不再单独填说明：直接用 Aha 本身作为「改变了哪个认知」的记录。
+          note: this.state.insight.trim() || this.state.title.trim() || "（待补充）",
         },
         actionGuidance: [
           {
@@ -334,12 +298,6 @@ export class DeepReadCardModal extends Modal {
           .join("\n");
         new Notice(`校验未通过：\n${detail}`);
         return;
-      }
-
-      // 先校验、再落盘：视觉图写入失败不会留下孤儿文件。
-      if (visualPath && this.mermaidCode && parsed.card.schema === "dr-card@1") {
-        await this.rlc.cards.writeText(visualPath, this.mermaidCode);
-        parsed.card.visuals = [{ kind: "mermaid", path: visualPath }];
       }
 
       const path = cardFilePath("deep_read", this.context.domain, this.context.folder, this.cardId);

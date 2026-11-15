@@ -35,6 +35,8 @@ export interface RlcSettings {
   imageModel: string;
   /** 新文献入库时自动翻译中文标题。 */
   autoTranslateTitle: boolean;
+  /** 实践提醒：上次弹 Notice 的日期（YYYY-MM-DD），每天最多一次。 */
+  practiceNoticeDate: string;
 }
 
 export interface AudienceProfile {
@@ -67,6 +69,7 @@ export const DEFAULT_SETTINGS: RlcSettings = {
   imageApiKey: "",
   imageModel: "doubao-seedream-5-0-pro-260628",
   autoTranslateTitle: true,
+  practiceNoticeDate: "",
 };
 
 export class RlcSettingTab extends PluginSettingTab {
@@ -78,9 +81,16 @@ export class RlcSettingTab extends PluginSettingTab {
   }
 
   override display(): void {
-    const { containerEl } = this;
-    containerEl.empty();
+    this.containerEl.empty();
+    // 自建容器：设置项一定在 .rlc-settings 内，不依赖 Obsidian 的容器类。
+    const containerEl = this.containerEl.createDiv({ cls: "rlc-settings" });
+    // 主题可能覆盖 setting-item 的 padding；用 Obsidian 允许的 setCssStyles 兜底。
+    containerEl.setCssStyles({ paddingLeft: "24px", paddingRight: "24px", paddingBottom: "48px" });
     new Setting(containerEl).setName("研究性学习社区").setHeading();
+    containerEl.createEl("p", {
+      text: `插件版本 ${this.rlc.manifest.version} · 每日笔记会读取核心日记配置`,
+      cls: "setting-item-description",
+    });
     containerEl.createEl("p", {
       text: "学生的半成品与失败稿不该经过学校服务器：AI 调用全部在你本机完成，只有你点「发布」的卡片才会上传。",
       cls: "setting-item-description",

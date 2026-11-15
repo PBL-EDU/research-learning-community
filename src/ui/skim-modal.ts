@@ -60,8 +60,9 @@ export class SkimModal extends Modal {
     });
 
     const setting = new Setting(contentEl).setName("摘要 / 正文片段");
+    setting.settingEl.addClass("rlc-field-stacked");
     setting.addTextArea((area) => {
-      area.inputEl.rows = 8;
+      area.inputEl.rows = 4;
       area.inputEl.addClass("rlc-skim-input");
       area
         .setPlaceholder("粘贴文献摘要；如果文献笔记里已经写了「## 摘要」，这里会自动带出来")

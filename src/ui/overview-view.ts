@@ -1,11 +1,14 @@
-import { ItemView, TFile, type WorkspaceLeaf } from "obsidian";
-import { domainSlug, literatureReviewPath, STATUS_LABEL } from "@rlc/vault-core";
-import { buildOverview, formatDay } from "../core/overview";
+import { ItemView, Menu, TFile, type WorkspaceLeaf } from "obsidian";
+import { domainSlug, fullTextPath, literatureReviewPath, STATUS_LABEL } from "@rlc/vault-core";
+import { buildOverview, formatDay, type CardSummary, type LiteratureNode } from "../core/overview";
 import { isReviewEmpty } from "../core/review";
 import type RlcPlugin from "../main";
 import type { CardContext } from "./card-modal";
 
 export const VIEW_TYPE_RLC_OVERVIEW = "rlc-overview";
+
+const LIT_STEP_LABELS = ["下载原文", "整理", "略读", "精读卡片", "实践卡"];
+const LIT_NEXT_LABELS = ["下载原文", "整理", "略读", "精读", "实践"];
 
 /**
  * 右侧栏总览：领域 → 文献 → 卡片。
@@ -19,6 +22,8 @@ export const VIEW_TYPE_RLC_OVERVIEW = "rlc-overview";
  */
 export class ResearchOverviewView extends ItemView {
   private refreshTimer: number | null = null;
+  private monthCursor = new Date();
+  private activeDay = "";
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -119,7 +124,9 @@ export class ResearchOverviewView extends ItemView {
     const pendingPaths = new Set(await this.rlc.publisher.outboxCardPaths());
 
     this.renderHeader(root, overview);
-    this.renderStats(root, overview);
+    const statsPanel = root.createDiv({ cls: "rlc-stats-panel" });
+    this.renderStats(statsPanel, overview);
+    this.renderPracticeTop(root, overview);
 
     if (pendingPaths.size > 0) {
       const row = root.createDiv({ cls: "rlc-pending" });
@@ -140,21 +147,21 @@ export class ResearchOverviewView extends ItemView {
 
   private renderHeader(root: HTMLElement, overview: ReturnType<typeof buildOverview>): void {
     const header = root.createDiv({ cls: "rlc-header" });
-    const left = header.createDiv({ cls: "rlc-header-left" });
-    left.createDiv({ text: "研究性学习", cls: "rlc-title" });
-    left.createDiv({ text: "总览", cls: "rlc-title-sub" });
+    header.createDiv({ text: "研究性学习", cls: "rlc-title" });
 
     const right = header.createDiv({ cls: "rlc-header-right" });
     const settings = this.rlc.settings;
     const name = settings.bindName || settings.authorName || "我";
-    const avatar = right.createDiv({ cls: "rlc-avatar" });
-    avatar.setText(name.slice(0, 1));
     right.createDiv({
-      text: settings.bindHandle ? name : "未绑定",
+      text: name,
       cls: "rlc-identity",
       title: settings.bindHandle
         ? `${settings.bindName}（${settings.bindHandle}）· ${settings.bindOrgName || settings.bindOrg}`
         : "在设置里用邀请码绑定身份",
+    });
+    right.createSpan({
+      text: settings.bindHandle ? "已绑定" : "未绑定",
+      cls: "rlc-identity-status",
     });
 
     const collapse = right.createEl("button", {
@@ -189,6 +196,7 @@ export class ResearchOverviewView extends ItemView {
     item("文献", overview.literatureTotal);
     item("卡片", overview.cardTotal);
     item("精读", overview.deepRead);
+    item("实践", overview.practice);
   }
 
   private renderEmpty(root: HTMLElement): void {
@@ -333,36 +341,54 @@ export class ResearchOverviewView extends ItemView {
     // 操作按固定顺序排一行：1 下载原文 → 2 整理 → 3 略读 → 4 精读卡片。
     // 放在标题下方而不是同一行，标题长短就不会再推动按钮位置。
     const actions = block.createDiv({ cls: "rlc-lit-actions" });
+    const progress = this.literatureProgress(literature);
+    const done = progress.filter(Boolean).length;
+    const nextIndex = progress.findIndex((value) => !value);
 
-    const hasPdf = Boolean(literature.pdfPath);
-    const download = actions.createEl("button", {
-      text: hasPdf ? "1 原文已下载" : "1 下载原文",
-      cls: "rlc-btn rlc-btn-ghost",
+    const dots = actions.createDiv({ cls: "rlc-phase-dots" });
+    progress.forEach((value, index) => {
+      // 原文 / 整理 / 略读 是一次性环节，完成后禁止再点；
+      // 精读与实践可以产出多张，保持可点。
+      const locked = value && index <= 2;
+      const dot = dots.createEl("button", {
+        cls:
+          "rlc-phase-dot" +
+          (value ? " rlc-dot-done" : "") +
+          (index === nextIndex ? " rlc-dot-current" : "") +
+          (locked ? " rlc-phase-locked" : ""),
+        attr: { "aria-label": `第 ${index + 1} 步：${LIT_STEP_LABELS[index]}` },
+      });
+      dot.disabled = locked;
+      dot.title = locked
+        ? `${index + 1} ${LIT_STEP_LABELS[index]}（已完成）`
+        : `${index + 1} ${LIT_STEP_LABELS[index]}`;
+      dot.addEventListener("click", (event) => {
+        event.stopPropagation();
+        if (!locked) this.runLiteratureStep(literature, index);
+      });
     });
-    download.disabled = hasPdf || !literature.doi;
-    download.title = hasPdf
-      ? "原文已在文献文件夹里"
-      : literature.doi
-        ? "下载开放获取的原文 PDF"
-        : "这篇文献没有 DOI，无法自动定位开放获取版本";
-    if (!download.disabled) {
-      download.addEventListener("click", () => void this.rlc.downloadLiteraturePdf(literature));
-    }
+    actions.createSpan({ text: `${done}/5`, cls: "rlc-phase-count" });
 
-    const organize = actions.createEl("button", { text: "2 整理", cls: "rlc-btn rlc-btn-ghost" });
-    organize.title = "PDF → Markdown（OCR + 分节 + 英文翻译）";
-    organize.addEventListener("click", () => void this.rlc.organizeLiterature(literature));
-
-    const skim = actions.createEl("button", { text: "3 略读", cls: "rlc-btn rlc-btn-ghost" });
-    skim.title = "生成略读报告，推进阅读状态";
-    skim.addEventListener("click", () => void this.rlc.openSkimModal(literature));
-
-    const addCard = actions.createEl("button", {
-      text: "4 ＋精读卡片",
-      cls: "rlc-btn rlc-btn-primary",
+    const next = actions.createEl("button", {
+      text: nextIndex < 0 ? "已完成" : `下一步：${LIT_NEXT_LABELS[nextIndex]}`,
+      cls: "rlc-btn rlc-btn-primary rlc-btn-small",
     });
-    addCard.title = "为这篇文献新建精读卡片";
-    addCard.addEventListener("click", () => this.rlc.openCardModal(this.contextFor(literature)));
+    next.disabled = nextIndex < 0;
+    next.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (nextIndex >= 0) this.runLiteratureStep(literature, nextIndex);
+    });
+
+    const more = actions.createEl("button", {
+      text: "⋯",
+      cls: "rlc-btn rlc-btn-small rlc-lit-more",
+      attr: { "aria-label": "全部动作" },
+    });
+    more.title = "全部动作";
+    more.addEventListener("click", (event) => {
+      event.stopPropagation();
+      this.showLiteratureMenu(event, literature);
+    });
 
     if (literature.cards.length === 0) return;
 
@@ -372,16 +398,51 @@ export class ResearchOverviewView extends ItemView {
       return;
     }
 
-    const cardList = list.createDiv({ cls: "rlc-card-list" });
-    for (const cardSummary of literature.cards) {
-      const row = cardList.createDiv({ cls: "rlc-card-row" });
-      const name = row.createSpan({ text: cardSummary.title, cls: "rlc-card-title" });
-      name.addEventListener("click", () => void this.openPath(cardSummary.path));
+    const deepRead = literature.cards.filter((card) => card.path.includes("-dr-"));
+    const practices = literature.cards.filter((card) => card.path.includes("-pc-"));
+    const others = literature.cards.filter(
+      (card) => !card.path.includes("-dr-") && !card.path.includes("-pc-"),
+    );
 
-      if (pendingPaths.has(cardSummary.path)) {
-        row.createSpan({ text: "待发布", cls: "rlc-status-chip rlc-pending-chip" });
+    if (deepRead.length > 0) {
+      list.createDiv({ text: `精读卡片 ${deepRead.length}`, cls: "rlc-card-group rlc-group-read" });
+      const cardList = list.createDiv({ cls: "rlc-card-list" });
+      for (const cardSummary of deepRead) {
+        this.renderDeepReadRow(cardList, cardSummary, literature, pendingPaths);
       }
+    }
 
+    if (practices.length > 0) {
+      list.createDiv({ text: `实践卡片 ${practices.length}`, cls: "rlc-card-group rlc-group-practice" });
+      const cardList = list.createDiv({ cls: "rlc-card-list rlc-card-list-practice" });
+      for (const cardSummary of practices) {
+        this.renderPracticeRow(cardList, cardSummary);
+      }
+    }
+
+    if (others.length > 0) {
+      const cardList = list.createDiv({ cls: "rlc-card-list" });
+      for (const cardSummary of others) {
+        this.renderDeepReadRow(cardList, cardSummary, literature, pendingPaths);
+      }
+    }
+  }
+
+  private renderDeepReadRow(
+    container: HTMLElement,
+    cardSummary: CardSummary,
+    literature: { domain: string; citekey: string; folder: string; title: string; authors: string[]; year?: number; doi?: string; url?: string },
+    pendingPaths: Set<string>,
+  ): void {
+    const row = container.createDiv({ cls: "rlc-card-row" });
+    const name = row.createSpan({ text: cardSummary.title, cls: "rlc-card-title" });
+    name.addEventListener("click", () => void this.openPath(cardSummary.path));
+
+    if (pendingPaths.has(cardSummary.path)) {
+      row.createSpan({ text: "待发布", cls: "rlc-status-chip rlc-pending-chip" });
+    }
+
+    if (cardSummary.path.includes("-dr-")) {
       const poster = row.createEl("button", { text: "海报", cls: "rlc-btn rlc-btn-small" });
       poster.title = "生成文案 + 插画 + 排版的海报";
       poster.addEventListener("click", (event) => {
@@ -389,23 +450,323 @@ export class ResearchOverviewView extends ItemView {
         void this.rlc.openPosterByPath(cardSummary.path);
       });
 
-      if (cardSummary.updatedAt) {
-        row.createSpan({ text: formatDay(cardSummary.updatedAt), cls: "rlc-card-date" });
-      }
+      const practice = row.createEl("button", { text: "立项", cls: "rlc-btn rlc-btn-small" });
+      practice.title = "以这张精读卡片的 Aha 立项，新建实践卡";
+      practice.addEventListener("click", (event) => {
+        event.stopPropagation();
+        this.rlc.openPracticeModal(this.contextFor(literature), cardSummary.path);
+      });
+    }
 
-      if (cardSummary.publishId) {
-        const chip = row.createSpan({ text: "已发布", cls: "rlc-status-chip rlc-published" });
-        if (cardSummary.publishUrl) {
-          chip.addEventListener("click", () => window.open(cardSummary.publishUrl, "_blank"));
-        }
-      } else {
-        const publish = row.createEl("button", { text: "发布", cls: "rlc-btn rlc-btn-small" });
-        publish.addEventListener("click", (event) => {
-          event.stopPropagation();
-          void this.rlc.publishCardByPath(cardSummary.path);
-        });
+    if (cardSummary.updatedAt) {
+      row.createSpan({ text: formatDay(cardSummary.updatedAt), cls: "rlc-card-date" });
+    }
+
+    if (cardSummary.publishId) {
+      const chip = row.createSpan({ text: "已发布", cls: "rlc-status-chip rlc-published" });
+      if (cardSummary.publishUrl) {
+        chip.addEventListener("click", () => window.open(cardSummary.publishUrl, "_blank"));
+      }
+    } else {
+      const publish = row.createEl("button", { text: "发布", cls: "rlc-btn rlc-btn-small" });
+      publish.addEventListener("click", (event) => {
+        event.stopPropagation();
+        void this.rlc.publishCardByPath(cardSummary.path);
+      });
+    }
+  }
+
+  private practiceStatus(card: CardSummary): { text: string; tone: string } {
+    const today = this.rlc.today();
+    if (card.hasSummary) return { text: "已复盘", tone: "done" };
+    if (card.processCount && card.processCount > 0) return { text: "进行中", tone: "active" };
+    if (card.scheduledFor && card.scheduledFor < today) {
+      const days = this.daysBetween(card.scheduledFor, today);
+      return { text: days >= 7 ? `卡住 ${days} 天` : `逾期 ${days} 天`, tone: "overdue" };
+    }
+    return { text: "计划中", tone: "planned" };
+  }
+
+  private daysBetween(from: string, to: string): number {
+    const start = Date.parse(`${from}T00:00:00`);
+    const end = Date.parse(`${to}T00:00:00`);
+    if (Number.isNaN(start) || Number.isNaN(end)) return 0;
+    return Math.max(0, Math.round((end - start) / 86_400_000));
+  }
+
+  private renderPracticeRow(container: HTMLElement, cardSummary: CardSummary): void {
+    const wrap = container.createDiv({ cls: "rlc-practice-item" });
+    const row = wrap.createDiv({ cls: "rlc-card-row rlc-card-row-practice" });
+
+    const caret = row.createEl("button", { text: "▸", cls: "rlc-practice-caret" });
+    const name = row.createSpan({ text: cardSummary.title, cls: "rlc-card-title" });
+    name.addEventListener("click", () => void this.openPath(cardSummary.path));
+
+    const status = this.practiceStatus(cardSummary);
+    row.createSpan({ text: status.text, cls: `rlc-practice-status rlc-practice-${status.tone}` });
+    if (cardSummary.scheduledFor) {
+      row.createSpan({ text: `${cardSummary.scheduledFor.slice(5)}`, cls: "rlc-card-date" });
+    }
+    if (cardSummary.processCount) {
+      row.createSpan({ text: `过程 ${cardSummary.processCount}`, cls: "rlc-card-date" });
+    }
+
+    const record = row.createEl("button", { text: "记录", cls: "rlc-btn rlc-btn-small" });
+    record.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const file = this.app.vault.getAbstractFileByPath(cardSummary.path);
+      if (file instanceof TFile) this.rlc.openProcessModalByFile(file);
+    });
+
+    const summary = row.createEl("button", { text: "总结", cls: "rlc-btn rlc-btn-small" });
+    summary.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const file = this.app.vault.getAbstractFileByPath(cardSummary.path);
+      if (file instanceof TFile) this.rlc.openSummaryModalByFile(file);
+    });
+
+    const body = wrap.createDiv({ cls: "rlc-practice-body rlc-hidden" });
+    let loaded = false;
+    caret.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const hidden = body.hasClass("rlc-hidden");
+      if (hidden) body.removeClass("rlc-hidden");
+      else body.addClass("rlc-hidden");
+      caret.setText(hidden ? "▾" : "▸");
+      if (hidden && !loaded) {
+        loaded = true;
+        const file = this.app.vault.getAbstractFileByPath(cardSummary.path);
+        if (file instanceof TFile) void this.renderPracticeDetail(body, file);
+      }
+    });
+  }
+
+  private async renderPracticeDetail(container: HTMLElement, file: TFile): Promise<void> {
+    container.empty();
+    const parsed = await this.rlc.cards.readCard(file);
+    if (!parsed.ok || parsed.card.schema !== "pc-card@1") {
+      container.createDiv({ text: "无法读取实践卡", cls: "rlc-muted" });
+      return;
+    }
+    const card = parsed.card;
+
+    const plan = container.createDiv({ cls: "rlc-practice-plan" });
+    plan.createDiv({ text: card.plan.goal, cls: "rlc-practice-goal" });
+    if (card.plan.scheduledFor) {
+      plan.createDiv({ text: `计划：${card.plan.scheduledFor}`, cls: "rlc-muted" });
+    }
+
+    card.plan.steps.forEach((step, index) => {
+      const line = container.createDiv({ cls: "rlc-step" });
+      const box = line.createEl("input", { type: "checkbox" });
+      box.checked = step.done;
+      box.addEventListener("change", () => {
+        void this.rlc.practice.toggleStep(file, index, box.checked).then(() => this.render());
+      });
+      line.createSpan({ text: step.text, cls: step.done ? "rlc-step-done" : "" });
+    });
+
+    const timeline = container.createDiv({ cls: "rlc-timeline" });
+    if (card.process.length === 0) {
+      timeline.createDiv({ text: "还没有过程记录。点「记录」写第一条。", cls: "rlc-muted" });
+    } else {
+      for (const entry of [...card.process].reverse()) {
+        const item = timeline.createDiv({ cls: "rlc-timeline-item" });
+        item.createSpan({ text: entry.date.slice(5, 10), cls: "rlc-timeline-date" });
+        item.createSpan({ text: entry.what, cls: "rlc-timeline-what" });
+        if (entry.evidence) item.createDiv({ text: `证据：${entry.evidence}`, cls: "rlc-muted" });
+        if (entry.obstacle) item.createDiv({ text: `阻碍：${entry.obstacle}`, cls: "rlc-muted" });
+        if (entry.adjust) item.createDiv({ text: `调整：${entry.adjust}`, cls: "rlc-muted" });
       }
     }
+
+    if (card.summary) {
+      container.createDiv({ text: `总结：${card.summary.outcome}`, cls: "rlc-practice-summary" });
+    }
+  }
+
+  private allPracticeCards(overview: ReturnType<typeof buildOverview>): CardSummary[] {
+    const map = new Map<string, CardSummary>();
+    for (const domain of overview.domains) {
+      for (const literature of domain.literatures) {
+        for (const card of literature.cards) {
+          if (card.kind === "practice") map.set(card.path, card);
+        }
+      }
+    }
+    return [...map.values()];
+  }
+
+  private ymd(date: Date): string {
+    const pad = (value: number) => String(value).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
+
+  private renderPracticeTop(root: HTMLElement, overview: ReturnType<typeof buildOverview>): void {
+    const practices = this.allPracticeCards(overview);
+    if (practices.length === 0) return;
+
+    const wrap = root.createDiv({ cls: "rlc-practice-top" });
+    // 日历卡片：日历与今日列表同框
+    const card = wrap.createDiv({ cls: "rlc-calendar-card" });
+    this.renderCalendar(card, practices);
+    this.renderDayList(card, practices);
+  }
+
+  private renderCalendar(wrap: HTMLElement, practices: CardSummary[]): void {
+    const today = this.rlc.today();
+    const calendar = wrap.createDiv({ cls: "rlc-calendar" });
+    const head = calendar.createDiv({ cls: "rlc-calendar-head" });
+    const prev = head.createEl("button", { text: "‹", cls: "rlc-calendar-nav" });
+    prev.addEventListener("click", () => {
+      this.monthCursor = new Date(this.monthCursor.getFullYear(), this.monthCursor.getMonth() - 1, 1);
+      void this.render();
+    });
+    head.createSpan({
+      text: `${this.monthCursor.getFullYear()} 年 ${this.monthCursor.getMonth() + 1} 月`,
+      cls: "rlc-calendar-title",
+    });
+    const next = head.createEl("button", { text: "›", cls: "rlc-calendar-nav" });
+    next.addEventListener("click", () => {
+      this.monthCursor = new Date(this.monthCursor.getFullYear(), this.monthCursor.getMonth() + 1, 1);
+      void this.render();
+    });
+
+    const weekdays = calendar.createDiv({ cls: "rlc-calendar-weekdays" });
+    for (const label of ["一", "二", "三", "四", "五", "六", "日"]) {
+      weekdays.createDiv({ text: label, cls: "rlc-calendar-weekday" });
+    }
+
+    const grid = calendar.createDiv({ cls: "rlc-calendar-grid" });
+    const first = new Date(this.monthCursor.getFullYear(), this.monthCursor.getMonth(), 1);
+    const offset = (first.getDay() + 6) % 7;
+    const days = new Date(this.monthCursor.getFullYear(), this.monthCursor.getMonth() + 1, 0).getDate();
+
+    for (let i = 0; i < offset; i += 1) {
+      grid.createDiv({ cls: "rlc-calendar-day rlc-calendar-blank" });
+    }
+
+    const planned = new Set(practices.map((card) => card.scheduledFor).filter(Boolean));
+    const recorded = new Set<string>();
+    for (const card of practices) {
+      for (const date of card.processDates ?? []) recorded.add(date.slice(0, 10));
+    }
+    const overdue = new Set<string>();
+    for (const card of practices) {
+      if (
+        card.scheduledFor &&
+        card.scheduledFor < today &&
+        !card.hasSummary &&
+        (card.processCount ?? 0) === 0
+      ) {
+        overdue.add(card.scheduledFor);
+      }
+    }
+
+    for (let day = 1; day <= days; day += 1) {
+      const date = this.ymd(new Date(this.monthCursor.getFullYear(), this.monthCursor.getMonth(), day));
+      const cell = grid.createDiv({ cls: "rlc-calendar-day" });
+      if (date === today) cell.addClass("rlc-calendar-today");
+      if (date === this.activeDay) cell.addClass("rlc-calendar-active");
+      cell.createSpan({ text: String(day) });
+      const dots = cell.createDiv({ cls: "rlc-calendar-dots" });
+      if (planned.has(date)) dots.createSpan({ cls: "rlc-dot rlc-dot-plan" });
+      if (recorded.has(date)) dots.createSpan({ cls: "rlc-dot rlc-dot-record" });
+      if (overdue.has(date)) dots.createSpan({ cls: "rlc-dot rlc-dot-overdue" });
+      cell.addEventListener("click", () => {
+        this.activeDay = date;
+        void this.render();
+      });
+    }
+  }
+
+  private renderDayList(wrap: HTMLElement, practices: CardSummary[]): void {
+    const today = this.rlc.today();
+    const day = this.activeDay || today;
+    const heading = day === today ? "今天" : day.slice(5);
+
+    const items = practices.filter(
+      (card) =>
+        card.scheduledFor === day ||
+        (card.processDates ?? []).some((date) => date.slice(0, 10) === day),
+    );
+
+    const stuck = practices.filter(
+      (card) =>
+        card.scheduledFor !== undefined &&
+        card.scheduledFor < today &&
+        !card.hasSummary &&
+        (card.processCount ?? 0) === 0 &&
+        this.daysBetween(card.scheduledFor, today) >= 7,
+    );
+    if (day === today) {
+      for (const card of stuck) if (!items.includes(card)) items.push(card);
+    }
+
+    if (items.length === 0) return;
+
+    const box = wrap.createDiv({ cls: "rlc-today" });
+    box.createDiv({ text: heading, cls: "rlc-today-title" });
+    for (const card of items) {
+      const row = box.createDiv({ cls: "rlc-today-row" });
+      const status = this.practiceStatus(card);
+      row.createSpan({ cls: `rlc-dot rlc-dot-${status.tone === "overdue" ? "overdue" : status.tone === "active" ? "record" : "plan"}` });
+      row.createSpan({ text: card.title, cls: "rlc-today-name" });
+      row.createSpan({ text: status.text, cls: `rlc-practice-status rlc-practice-${status.tone}` });
+      row.addEventListener("click", () => void this.openPath(card.path));
+    }
+  }
+
+  private literatureProgress(literature: LiteratureNode): boolean[] {
+    const fullText = this.app.vault.getAbstractFileByPath(
+      fullTextPath(literature.domain, literature.folder),
+    );
+    const skimmed = ["skimming", "reading", "deep_read", "done"].includes(literature.status);
+    return [
+      Boolean(literature.pdfPath),
+      Boolean(fullText),
+      skimmed,
+      literature.cards.some((card) => card.path.includes("-dr-")),
+      literature.cards.some((card) => card.path.includes("-pc-")),
+    ];
+  }
+
+  private runLiteratureStep(literature: LiteratureNode, index: number): void {
+    if (index === 0) {
+      if (literature.pdfPath) void this.openPath(literature.pdfPath);
+      else void this.rlc.downloadLiteraturePdf(literature);
+      return;
+    }
+    if (index === 1) {
+      void this.rlc.organizeLiterature(literature);
+      return;
+    }
+    if (index === 2) {
+      void this.rlc.openSkimModal(literature);
+      return;
+    }
+    if (index === 3) {
+      this.rlc.openCardModal(this.contextFor(literature));
+      return;
+    }
+    this.rlc.openPracticeModal(this.contextFor(literature));
+  }
+
+  private showLiteratureMenu(event: MouseEvent, literature: LiteratureNode): void {
+    const menu = new Menu();
+    const progress = this.literatureProgress(literature);
+    LIT_STEP_LABELS.forEach((label, index) => {
+      const locked = progress[index] === true && index <= 2;
+      menu.addItem((item) => {
+        item
+          .setTitle(`${index + 1} ${label}`)
+          .setDisabled(locked)
+          .onClick(() => {
+            if (!locked) this.runLiteratureStep(literature, index);
+          });
+      });
+    });
+    menu.showAtMouseEvent(event);
   }
 
   private contextFor(literature: {

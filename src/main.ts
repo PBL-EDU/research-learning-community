@@ -7,6 +7,7 @@ import {
   literatureNotePath,
   literatureReviewDocument,
   literatureReviewPath,
+  parseCardPath,
   pdfPath,
   safeSegment,
   systemFile,
@@ -24,6 +25,10 @@ import { domainReviewMessages, translateTitleMessages } from "./core/prompts";
 import { parseCandidates, stripCandidates, type ReviewCandidate } from "./core/review";
 import { CandidateModal } from "./ui/candidate-modal";
 import { DeepReadCardModal, type CardContext } from "./ui/card-modal";
+import { PracticeCardModal } from "./ui/practice-modal";
+import { ProcessRecordModal } from "./ui/process-modal";
+import { PracticeSummaryModal } from "./ui/summary-modal";
+import { PracticeService } from "./core/practice-service";
 import { DomainModal } from "./ui/domain-modal";
 import { LiteratureModal } from "./ui/literature-modal";
 import { OrganizeConsentModal } from "./ui/organize-consent-modal";
@@ -42,8 +47,10 @@ export default class RlcPlugin extends Plugin {
   publisher!: PublishService;
   organize!: OrganizeService;
   index!: VaultIndex;
+  practice!: PracticeService;
 
   private statusEl: HTMLElement | null = null;
+  private planCheckState = new Map<string, Map<string, boolean>>();
 
   override async onload(): Promise<void> {
     await this.loadSettings();
@@ -54,6 +61,7 @@ export default class RlcPlugin extends Plugin {
     this.publisher = new PublishService(this.app, this.cards, () => this.settings);
     this.organize = new OrganizeService(this.ai, () => this.settings);
     this.index = new VaultIndex(this.app);
+    this.practice = new PracticeService(this.app, this.cards);
 
     this.addSettingTab(new RlcSettingTab(this.app, this));
 
@@ -111,17 +119,70 @@ export default class RlcPlugin extends Plugin {
     this.statusEl.addEventListener("click", () => void this.retryOutbox());
     await this.refreshStatus();
 
-    // 右键文件 → 发布；比记命令面板更容易发现。
+    // 日记里勾选计划 → 弹过程记录；取消则回滚勾选。
+    this.registerEvent(
+      this.app.vault.on("modify", (file) => {
+        if (file instanceof TFile && file.extension === "md") {
+          void this.handleDailyNoteChange(file);
+        }
+      }),
+    );
+    this.app.workspace.onLayoutReady(() => {
+      void this.syncPracticePlans();
+      void this.maybeRemindPractice();
+    });
+
+    // 编辑器右键：在文献笔记里选中文字 → 新建精读卡片并自动填摘录。
+    this.registerEvent(
+      this.app.workspace.on("editor-menu", (menu, editor, view) => {
+        const file = view.file;
+        if (!file) return;
+        const literature = this.index.listLiteratures().find((item) => item.notePath === file.path);
+        if (!literature) return;
+        const selection = editor.getSelection().trim();
+        menu.addItem((item) =>
+          item
+            .setTitle(selection ? "新建精读卡片（用选中文字）" : "新建精读卡片")
+            .setIcon("notebook-pen")
+            .onClick(() =>
+              this.openCardModal(this.contextFrom(literature), {
+                ...(selection ? { initialQuote: selection.slice(0, 300) } : {}),
+              }),
+            ),
+        );
+      }),
+    );
+
+    // 右键文件：文献笔记可略读/建卡，卡片可发布。
     this.registerEvent(
       this.app.workspace.on("file-menu", (menu, file) => {
         if (!(file instanceof TFile) || file.extension !== "md") return;
-        if (!file.path.startsWith("领域/")) return;
-        menu.addItem((item) =>
-          item
-            .setTitle("发布到研究性学习社区")
-            .setIcon("upload")
-            .onClick(() => void this.publishFile(file)),
-        );
+
+        const literature = this.index.listLiteratures().find((item) => item.notePath === file.path);
+        if (literature) {
+          menu.addItem((item) =>
+            item
+              .setTitle("生成略读报告")
+              .setIcon("book-open")
+              .onClick(() => void this.openSkimModal(literature)),
+          );
+          menu.addItem((item) =>
+            item
+              .setTitle("新建精读卡片")
+              .setIcon("notebook-pen")
+              .onClick(() => this.openCardModal(this.contextFrom(literature))),
+          );
+        }
+
+        const location = parseCardPath(file.path);
+        if (location && location.kind !== "unknown") {
+          menu.addItem((item) =>
+            item
+              .setTitle("发布到研究性学习社区")
+              .setIcon("upload")
+              .onClick(() => void this.publishFile(file)),
+          );
+        }
       }),
     );
   }
@@ -225,7 +286,7 @@ export default class RlcPlugin extends Plugin {
     if (file instanceof TFile) await this.openPosterModal(file);
   }
 
-  openCardModal(context: CardContext): void {
+  openCardModal(context: CardContext, options?: { initialQuote?: string }): void {
     const notePath = `领域/${context.domain}/文献/${context.folder}/${context.folder}.md`;
     new DeepReadCardModal(this.app, this, context, () => {
       // 新建卡片后展开它所在的文献与领域，否则学生以为没保存成功。
@@ -234,7 +295,165 @@ export default class RlcPlugin extends Plugin {
         (name) => name !== context.domain,
       );
       void this.saveSettings().then(() => this.refreshOverview());
-    }).open();
+    }, options?.initialQuote).open();
+  }
+
+  /** 实践卡：从 Aha 立项（带 linkedCardPath）或从文献直接建。 */
+  openPracticeModal(context: CardContext, linkedCardPath?: string): void {
+    const notePath = `领域/${context.domain}/文献/${context.folder}/${context.folder}.md`;
+    const open = (linkedCards: string[]) => {
+      new PracticeCardModal(this.app, this, context, { linkedCards }).open();
+      this.settings.literatureOpen[notePath] = "open";
+      this.settings.collapsedDomains = this.settings.collapsedDomains.filter(
+        (name) => name !== context.domain,
+      );
+      void this.saveSettings().then(() => this.refreshOverview());
+    };
+
+    if (!linkedCardPath) {
+      open([]);
+      return;
+    }
+
+    const file = this.app.vault.getAbstractFileByPath(linkedCardPath);
+    if (!(file instanceof TFile)) {
+      open([]);
+      return;
+    }
+
+    void this.cards
+      .readCard(file)
+      .then((parsed) => open(parsed.ok ? [parsed.card.cardId] : []))
+      .catch(() => open([]));
+  }
+
+  /** 今天（本地日期，YYYY-MM-DD）。 */
+  today(): string {
+    const now = new Date();
+    const pad = (value: number) => String(value).padStart(2, "0");
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  }
+
+  private async findPracticeCardFile(cardId: string): Promise<TFile | null> {
+    for (const file of this.app.vault.getMarkdownFiles()) {
+      if (!file.path.includes("-pc-")) continue;
+      const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
+      if (frontmatter && frontmatter.cardId === cardId) return file;
+    }
+    return null;
+  }
+
+  openProcessModalByFile(file: TFile, onCancel?: () => void): void {
+    void this.cards.readCard(file).then((parsed) => {
+      if (!parsed.ok || parsed.card.schema !== "pc-card@1") {
+        new Notice("这不是实践卡，无法记录过程。");
+        return;
+      }
+      new ProcessRecordModal(
+        this.app,
+        this,
+        parsed.card,
+        file,
+        () => void this.refreshOverview(),
+        onCancel,
+      ).open();
+    });
+  }
+
+  openSummaryModalByFile(file: TFile): void {
+    void this.cards.readCard(file).then((parsed) => {
+      if (!parsed.ok || parsed.card.schema !== "pc-card@1") {
+        new Notice("这不是实践卡，无法写总结。");
+        return;
+      }
+      new PracticeSummaryModal(
+        this.app,
+        this,
+        parsed.card,
+        file,
+        () => void this.refreshOverview(),
+      ).open();
+    });
+  }
+
+  /** 日记勾选计划行 → 记录过程；取消则回滚勾选。 */
+  private async handleDailyNoteChange(file: TFile): Promise<void> {
+    let content: string;
+    try {
+      content = await this.app.vault.read(file);
+    } catch {
+      return;
+    }
+    if (!content.includes("rlc-plan: card=")) return;
+
+    const current = await this.practice.readPlanChecks(file);
+    const previous = this.planCheckState.get(file.path);
+    this.planCheckState.set(file.path, current);
+
+    // 首次只建立基线，避免把历史勾选当成新操作。
+    if (!previous) return;
+
+    for (const [cardId, checked] of current) {
+      if (!checked || previous.get(cardId) === true) continue;
+      const cardFile = await this.findPracticeCardFile(cardId);
+      if (!cardFile) continue;
+      this.openProcessModalByFile(cardFile, () => void this.practice.uncheckPlan(file, cardId));
+      break;
+    }
+  }
+
+  /** 打开库时，把今天的计划写进日记（幂等）。 */
+  private async syncPracticePlans(): Promise<void> {
+    const today = this.today();
+    for (const summary of this.index.listCards()) {
+      if (summary.kind !== "practice" || summary.scheduledFor !== today) continue;
+      const file = this.app.vault.getAbstractFileByPath(summary.path);
+      if (!(file instanceof TFile)) continue;
+      const parsed = await this.cards.readCard(file);
+      if (parsed.ok && parsed.card.schema === "pc-card@1") {
+        await this.practice.writePlanLine(parsed.card);
+      }
+    }
+
+    // 建立勾选基线，避免用户紧接着勾选时被当成「历史状态」。
+    try {
+      const notePath = await this.practice.dailyNotePath(new Date());
+      const note = this.app.vault.getAbstractFileByPath(notePath);
+      if (note instanceof TFile) {
+        this.planCheckState.set(note.path, await this.practice.readPlanChecks(note));
+      }
+    } catch {
+      // 日记插件未配置时忽略
+    }
+  }
+
+  private daysBetween(from: string, to: string): number {
+    const start = Date.parse(`${from}T00:00:00`);
+    const end = Date.parse(`${to}T00:00:00`);
+    if (Number.isNaN(start) || Number.isNaN(end)) return 0;
+    return Math.max(0, Math.round((end - start) / 86_400_000));
+  }
+
+  /** 每天最多一次实践提醒。 */
+  private async maybeRemindPractice(): Promise<void> {
+    const today = this.today();
+    if (this.settings.practiceNoticeDate === today) return;
+
+    const cards = this.index.listCards().filter((card) => card.kind === "practice");
+    const due = cards.filter((card) => card.scheduledFor === today).length;
+    const stuck = cards.filter(
+      (card) =>
+        card.scheduledFor !== undefined &&
+        card.scheduledFor < today &&
+        !card.hasSummary &&
+        (card.processCount ?? 0) === 0 &&
+        this.daysBetween(card.scheduledFor, today) >= 7,
+    ).length;
+
+    if (due === 0 && stuck === 0) return;
+    this.settings.practiceNoticeDate = today;
+    await this.saveSettings();
+    new Notice(`实践提醒：今天 ${due} 项${stuck > 0 ? `，${stuck} 项已卡住` : ""}`);
   }
 
   /** 略读：自动带出文献笔记里的「## 摘要」作为输入。 */

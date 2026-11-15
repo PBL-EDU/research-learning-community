@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    研究性学习社区 · 视觉主题 B「卡片工作台」
    两端共用同一套设计语言：圆角卡片、轻阴影、靛蓝强调色、标签胶囊。
    插件内用 Obsidian 变量做底色适配（明/暗主题自动跟随）。
@@ -18,7 +18,7 @@
   /* 折叠线：比主边框更浅，用来表示「属于」而不是「分隔」。 */
   --rlc-line-soft: color-mix(in srgb, var(--rlc-line) 55%, transparent);
 
-  padding: 4px 2px 24px;
+  padding: 6px 8px 24px;
   color: var(--rlc-ink);
 }
 
@@ -113,29 +113,30 @@
 /* ---------- 统计 ---------- */
 .rlc-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  margin-bottom: 12px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 8px;
 }
 
 .rlc-stat {
   background: var(--rlc-surface-2);
   border: 1px solid var(--rlc-line);
-  border-radius: 10px;
-  padding: 8px 4px;
+  border-radius: 8px;
+  padding: 4px 2px 5px;
   text-align: center;
+  line-height: 1.15;
 }
 
 .rlc-stat-value {
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1.1;
 }
 
 .rlc-stat-label {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--rlc-muted);
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 /* ---------- 待发布 ---------- */
@@ -154,8 +155,8 @@
 
 /* ---------- 领域卡 ---------- */
 .rlc-domain-card {
-  background: var(--rlc-surface-2);
-  border: 1px solid var(--rlc-line);
+  background: color-mix(in srgb, var(--text-normal) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-normal) 16%, transparent);
   border-radius: var(--rlc-radius);
   padding: 12px;
   margin-bottom: 12px;
@@ -166,6 +167,20 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
+}
+
+.rlc-domain-info {
+  order: 2;
+  flex: 1;
+}
+
+.rlc-domain-head .rlc-caret {
+  order: 1;
+  margin-right: 4px;
+}
+
+.rlc-domain-actions {
+  order: 3;
 }
 
 .rlc-domain-info {
@@ -203,8 +218,10 @@
 .rlc-lit-card {
   position: relative;
   padding: 8px 8px 10px;
-  margin-top: 4px;
+  margin-top: 6px;
+  border: 1px solid color-mix(in srgb, var(--text-normal) 12%, transparent);
   border-radius: 8px;
+  background: color-mix(in srgb, var(--text-normal) 2%, transparent);
 }
 
 .rlc-lit-card:hover {
@@ -267,20 +284,20 @@
 
 .rlc-lit-actions {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 4px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 3px;
   width: 100%;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 .rlc-lit-actions .rlc-btn {
-  font-size: 10px;
-  padding: 3px 2px;
+  font-size: 9.5px;
+  padding: 2px 1px;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  border-radius: 7px;
+  border-radius: 6px;
 }
 
 .rlc-lit-actions .rlc-btn:disabled {
@@ -317,9 +334,9 @@
 /* 卡片层：缩进到文献标题之后，并用更浅的线表示第三层。 */
 .rlc-card-list {
   margin-top: 6px;
-  margin-left: 10px;
+  margin-left: 12px;
   padding-left: 14px;
-  border-left: 1px solid var(--rlc-line-soft);
+  border-left: 1px solid color-mix(in srgb, var(--text-normal) 12%, transparent);
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -426,16 +443,6 @@
   color: var(--text-muted);
 }
 
-.rlc-mermaid-preview {
-  background: var(--background-secondary);
-  border-radius: 8px;
-  padding: 0.75em;
-  font-size: 0.8em;
-  max-height: 200px;
-  overflow: auto;
-  white-space: pre-wrap;
-}
-
 .rlc-skim-input {
   width: 420px;
   font-family: var(--font-text);
@@ -512,7 +519,7 @@
 
 @media (max-width: 420px) {
   .rlc-stats {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
@@ -543,9 +550,9 @@
 
 .rlc-domain-body {
   margin-top: 8px;
-  margin-left: 7px;
-  padding-left: 14px;
-  border-left: 1px solid var(--rlc-line);
+  margin-left: 0;
+  padding-left: 22px;
+  border-left: 1px solid color-mix(in srgb, var(--text-normal) 18%, transparent);
 }
 
 /* 折叠的领域：底部改用虚线收口，提示「下面还有内容」。 */
@@ -580,4 +587,649 @@
   border-radius: 10px;
   display: block;
   margin: 8px auto;
+}
+
+/* 设置页左右留白 */
+.rlc-settings {
+  margin: 0 24px 48px !important;
+  padding: 0 !important;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.rlc-settings .setting-item {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 10px 0 !important;
+  border-radius: 8px;
+}
+
+.rlc-settings .setting-item-info {
+  padding-left: 14px;
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.rlc-settings .setting-item-name {
+  flex: none;
+}
+
+.rlc-settings .setting-item-description {
+  flex: 1 1 auto;
+  margin-top: 0;
+}
+
+.rlc-settings .setting-item-control {
+  padding-left: 14px;
+  padding-right: 14px;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.rlc-settings .setting-item-info {
+  flex: 1 1 100%;
+}
+
+.rlc-settings .setting-item-control {
+  flex: 1 1 100%;
+  justify-content: flex-start;
+}
+
+.rlc-settings .setting-item-control input,
+.rlc-settings .setting-item-control select,
+.rlc-settings .setting-item-control textarea {
+  width: 100%;
+}
+
+.rlc-settings .setting-item-description {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.rlc-settings .setting-item-control {
+  min-width: 0;
+}
+
+.rlc-settings input,
+.rlc-settings textarea,
+.rlc-settings select {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+/* 表单改为上下布局：标签在上，输入框占满整行 */
+.rlc-field-stacked {
+  display: block;
+}
+
+.rlc-field-stacked .setting-item-info {
+  margin-bottom: 4px;
+}
+
+.rlc-field-stacked .setting-item-control {
+  width: 100%;
+}
+
+.rlc-field-stacked .setting-item-control input,
+.rlc-field-stacked .setting-item-control textarea {
+  width: 100%;
+}
+
+/* ===== 实践卡：颜色与顶部日历 ===== */
+.rlc-overview {
+  --rlc-practice: #2f9e83;
+  --rlc-practice-weak: color-mix(in srgb, var(--rlc-practice) 14%, transparent);
+  --rlc-danger: #c0504d;
+}
+
+.rlc-practice-top {
+  margin: 4px 0 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.rlc-calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.rlc-calendar-title {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.rlc-calendar-nav {
+  background: none;
+  border: none;
+  color: var(--rlc-muted);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 6px;
+}
+
+.rlc-calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  margin-bottom: 2px;
+}
+
+.rlc-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.rlc-calendar-weekday {
+  text-align: center;
+  font-size: 9px;
+  color: var(--rlc-muted);
+  padding-bottom: 2px;
+}
+
+.rlc-calendar-day {
+  position: relative;
+  text-align: center;
+  font-size: 10px;
+  padding: 3px 0 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.rlc-calendar-day:hover {
+  background: var(--rlc-accent-weak);
+}
+
+.rlc-calendar-today {
+  background: var(--rlc-accent-weak);
+  font-weight: 700;
+}
+
+.rlc-calendar-active {
+  outline: 1px solid var(--rlc-accent);
+}
+
+.rlc-calendar-blank {
+  visibility: hidden;
+}
+
+.rlc-calendar-dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+}
+
+.rlc-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.rlc-dot-plan {
+  border: 1px solid var(--rlc-practice);
+  background: transparent;
+}
+
+.rlc-dot-record {
+  background: var(--rlc-practice);
+}
+
+.rlc-dot-overdue {
+  background: var(--rlc-danger);
+}
+
+.rlc-today {
+  margin-top: 8px;
+  padding: 6px 8px;
+  border-left: 3px solid var(--rlc-accent);
+  border-radius: 0 6px 6px 0;
+  background: var(--rlc-accent-weak);
+}
+
+.rlc-today-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--rlc-muted);
+  margin-bottom: 4px;
+}
+
+.rlc-today-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.rlc-today-row:hover {
+  background: var(--rlc-accent-weak);
+}
+
+.rlc-today-name {
+  flex: 1;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rlc-practice-status {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.rlc-practice-planned {
+  color: var(--rlc-muted);
+  border-color: var(--rlc-line);
+}
+
+.rlc-practice-active {
+  color: var(--rlc-practice);
+  border-color: color-mix(in srgb, var(--rlc-practice) 40%, transparent);
+}
+
+.rlc-practice-overdue {
+  color: var(--rlc-danger);
+  border-color: color-mix(in srgb, var(--rlc-danger) 40%, transparent);
+}
+
+.rlc-practice-done {
+  color: var(--rlc-muted);
+  border-color: var(--rlc-line);
+}
+
+/* ===== 文献内的分组与颜色 ===== */
+.rlc-card-group {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--rlc-muted);
+  margin: 8px 0 2px;
+}
+
+.rlc-group-practice {
+  color: var(--rlc-practice);
+}
+
+.rlc-card-list-practice {
+  border-left-color: color-mix(in srgb, var(--rlc-practice) 35%, transparent);
+}
+
+.rlc-card-row-practice .rlc-card-title {
+  font-weight: 500;
+}
+
+.rlc-practice-caret {
+  background: none;
+  border: none;
+  color: var(--rlc-muted);
+  cursor: pointer;
+  font-size: 10px;
+  padding: 0 2px;
+}
+
+.rlc-practice-body {
+  margin: 2px 0 8px 18px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--rlc-surface);
+  border: 1px solid var(--rlc-line);
+}
+
+.rlc-practice-goal {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.rlc-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 2px 0;
+}
+
+.rlc-step input {
+  margin: 0;
+}
+
+.rlc-step-done {
+  text-decoration: line-through;
+  color: var(--rlc-muted);
+}
+
+.rlc-timeline {
+  margin-top: 8px;
+  border-top: 1px dashed var(--rlc-line);
+  padding-top: 6px;
+}
+
+.rlc-timeline-item {
+  font-size: 12px;
+  padding: 4px 0;
+  border-bottom: 1px dotted var(--rlc-line);
+}
+
+.rlc-timeline-date {
+  color: var(--rlc-practice);
+  margin-right: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rlc-timeline-what {
+  font-weight: 500;
+}
+
+.rlc-practice-summary {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--rlc-practice);
+}
+
+/* 输入框高度上限：Obsidian 默认给 textarea 较大最小高度 */
+.rlc-modal textarea,
+.rlc-settings textarea {
+  min-height: 42px !important;
+  height: auto !important;
+  max-height: 220px;
+  padding: 4px 8px;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.rlc-modal input[type="text"],
+.rlc-modal input[type="password"],
+.rlc-settings input[type="text"],
+.rlc-settings input[type="password"] {
+  height: 28px;
+  padding: 2px 8px;
+  font-size: 12.5px;
+}
+
+.rlc-modal .setting-item-control,
+.rlc-settings .setting-item-control {
+  min-width: 0;
+}
+
+.rlc-modal .setting-item-control input,
+.rlc-modal .setting-item-control textarea,
+.rlc-settings .setting-item-control input,
+.rlc-settings .setting-item-control textarea,
+.rlc-settings .setting-item-control select {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* 兜底：即使主题覆盖 border，也用 inset 阴影画出层级线 */
+.rlc-domain-body {
+  box-shadow: inset 1px 0 0 color-mix(in srgb, var(--text-normal) 18%, transparent);
+}
+
+.rlc-card-list {
+  box-shadow: inset 1px 0 0 color-mix(in srgb, var(--text-normal) 12%, transparent);
+}
+
+/* 设置页：即使类被加到内层，也用父容器兜底留白 */
+.vertical-tab-content:has(.rlc-settings) {
+  padding-inline: 32px !important;
+}
+
+.rlc-settings {
+  width: 100%;
+}
+
+/* 输入框高度硬上限 */
+.rlc-modal textarea {
+  height: 88px !important;
+  min-height: 88px !important;
+  max-height: 88px;
+  resize: vertical;
+}
+
+.rlc-modal input[type="text"],
+.rlc-modal input[type="password"] {
+  height: 26px !important;
+  min-height: 26px;
+}
+
+.rlc-settings input[type="text"],
+.rlc-settings input[type="password"] {
+  height: 26px !important;
+  min-height: 26px;
+}
+
+/* 日历：星期栏与日期格用底色区分 */
+.rlc-calendar-weekdays {
+  background: var(--rlc-surface-2);
+  border-radius: 6px;
+  padding: 3px 0;
+  margin-bottom: 4px;
+}
+
+.rlc-calendar-weekday {
+  color: var(--rlc-muted);
+  font-weight: 600;
+}
+
+.rlc-calendar-grid {
+  background: var(--rlc-surface-2);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.rlc-calendar-day {
+  background: var(--rlc-surface);
+}
+
+.rlc-calendar-blank {
+  background: transparent;
+}
+
+.rlc-calendar-today {
+  background: var(--rlc-accent-weak);
+  font-weight: 700;
+}
+
+/* 领域之间再拉开一点 */
+.rlc-domain-card + .rlc-domain-card {
+  margin-top: 14px;
+}
+
+/* 日历高对比层次 */
+.rlc-calendar-weekdays {
+  background: color-mix(in srgb, var(--text-normal) 8%, transparent) !important;
+  border-radius: 6px;
+}
+
+.rlc-calendar-grid {
+  background: color-mix(in srgb, var(--text-normal) 4%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--text-normal) 10%, transparent);
+}
+
+.rlc-calendar-day {
+  background: color-mix(in srgb, var(--text-normal) 2%, transparent);
+  border: 1px solid transparent;
+}
+
+.rlc-calendar-day:hover {
+  border-color: color-mix(in srgb, var(--text-normal) 16%, transparent);
+}
+
+.rlc-calendar-today {
+  background: var(--rlc-accent-weak) !important;
+  border-color: var(--rlc-accent) !important;
+}
+
+.rlc-dot {
+  width: 5px;
+  height: 5px;
+}
+
+/* 三种框区分：日历用浅底、今日用强调条、领域用卡片 */
+.rlc-calendar {
+  border: 1px solid color-mix(in srgb, var(--text-normal) 10%, transparent);
+  border-radius: 8px;
+  padding: 6px;
+  margin-bottom: 8px;
+}
+
+.rlc-calendar-weekdays {
+  background: color-mix(in srgb, var(--text-normal) 7%, transparent) !important;
+  border-radius: 5px;
+}
+
+.rlc-calendar-grid {
+  border: none !important;
+  background: transparent !important;
+}
+
+.rlc-domain-card {
+  border-radius: 10px;
+  border-width: 1px;
+}
+
+/* 总览面板：一个圆角框包住标题、统计、日历、今日 */
+.rlc-overview-panel {
+  border: 1px solid color-mix(in srgb, var(--text-normal) 12%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--text-normal) 3%, transparent);
+  padding: 10px;
+  margin-bottom: 14px;
+}
+
+.rlc-calendar {
+  border: none;
+  padding: 0;
+  margin-bottom: 6px;
+}
+
+.rlc-today {
+  margin-top: 6px;
+}
+
+/* 日历卡片：日历 + 今日同框 */
+.rlc-calendar-card {
+  border: 1px solid color-mix(in srgb, var(--text-normal) 12%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text-normal) 2%, transparent);
+  padding: 8px;
+}
+
+/* 头部一行，不换行 */
+.rlc-header {
+  flex-wrap: nowrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.rlc-title {
+  flex: none;
+  white-space: nowrap;
+}
+
+.rlc-header-right {
+  gap: 6px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.rlc-identity {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rlc-identity-status {
+  font-size: 10px;
+  color: var(--rlc-muted);
+  white-space: nowrap;
+}
+
+/* 统计五项的外框 */
+.rlc-stats-panel {
+  border: 1px solid color-mix(in srgb, var(--text-normal) 12%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text-normal) 3%, transparent);
+  padding: 8px;
+  margin-bottom: 12px;
+}
+
+.rlc-stats {
+  margin-bottom: 0;
+}
+
+/* 文献动作：进度点 + 下一步 + 更多 */
+.rlc-lit-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  grid-template-columns: none;
+}
+
+.rlc-phase-dots {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rlc-phase-dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--text-normal) 28%, transparent);
+  background: transparent;
+  cursor: pointer;
+}
+
+.rlc-phase-dot.rlc-dot-done {
+  background: var(--rlc-accent);
+  border-color: var(--rlc-accent);
+}
+
+.rlc-phase-dot.rlc-dot-current {
+  border-color: var(--rlc-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rlc-accent) 22%, transparent);
+}
+
+.rlc-phase-count {
+  font-size: 10px;
+  color: var(--rlc-muted);
+  margin-right: 2px;
+}
+
+.rlc-lit-actions .rlc-btn {
+  font-size: 10px;
+  padding: 2px 8px;
+}
+
+.rlc-lit-more {
+  margin-left: auto;
+}
+
+.rlc-phase-dot.rlc-phase-locked {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.rlc-phase-dot:disabled {
+  pointer-events: none;
 }

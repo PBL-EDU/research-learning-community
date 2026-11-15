@@ -26,10 +26,35 @@ export class VaultIndex {
 
       const publish = frontmatter.publish as { id?: unknown; url?: unknown } | undefined;
 
+      const plan =
+        frontmatter.plan && typeof frontmatter.plan === "object"
+          ? (frontmatter.plan as Record<string, unknown>)
+          : null;
+      const steps = Array.isArray(plan?.steps) ? (plan?.steps as unknown[]) : [];
+      const process = Array.isArray(frontmatter.process) ? (frontmatter.process as unknown[]) : [];
+      const processDates = process
+        .map((entry) =>
+          entry && typeof entry === "object" && typeof (entry as { date?: unknown }).date === "string"
+            ? ((entry as { date: string }).date)
+            : null,
+        )
+        .filter((value): value is string => Boolean(value));
+
       cards.push({
         path: file.path,
         kind: typeof frontmatter.kind === "string" ? frontmatter.kind : location.kind,
         title: typeof frontmatter.title === "string" ? frontmatter.title : file.basename,
+        cardId: typeof frontmatter.cardId === "string" ? frontmatter.cardId : undefined,
+        scheduledFor:
+          typeof plan?.scheduledFor === "string" ? plan.scheduledFor : undefined,
+        dueBy: typeof plan?.dueBy === "string" ? plan.dueBy : undefined,
+        processCount: process.length,
+        processDates,
+        hasSummary: Boolean(frontmatter.summary),
+        stepsTotal: steps.length,
+        stepsDone: steps.filter(
+          (step) => step && typeof step === "object" && (step as { done?: unknown }).done === true,
+        ).length,
         domain: location.domain,
         citekey: location.citekey,
         updatedAt: typeof frontmatter.updatedAt === "string" ? frontmatter.updatedAt : undefined,

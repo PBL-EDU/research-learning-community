@@ -11,6 +11,15 @@ export interface CardSummary {
   path: string;
   kind: string;
   title: string;
+  cardId?: string;
+  /** 实践卡：计划日期与过程摘要，供日历/今日条/列表使用。 */
+  scheduledFor?: string;
+  dueBy?: string;
+  processCount?: number;
+  processDates?: string[];
+  hasSummary?: boolean;
+  stepsDone?: number;
+  stepsTotal?: number;
   domain: string;
   citekey: string | null;
   updatedAt?: string;

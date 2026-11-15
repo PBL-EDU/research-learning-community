@@ -18,6 +18,7 @@ domain → AI literature review → verified sources → skimming → deep-read 
   paragraph-level Chinese translation for English papers.
 - **Poster generator** — writes a short post for a reader profile you define, draws an illustration with
   seedream, and composes a 1080×1440 poster locally.
+- **Practice cards** — plan, daily-note progress log, step checkboxes and a summary, with a calendar and a today list in the sidebar.
 - **Optional publishing** — push approved cards and posters to a self-hosted community server.
 
 ## Install
